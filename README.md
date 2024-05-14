@@ -17,23 +17,29 @@ dmd -m64 jam.d
 ## Command line
 
 ```bash
-jam [options] <file filter> [<file filter> ...]
+jam `<option>`
 ```
 
 ### Options
 
 ```
+--encrypt `<key>` `<nonce>` `<folder path>` `<filter>` [`<filter>` ...] : encrypt "🔓 ... 🔓" sections in matching files
+--decrypt `<key>` `<nonce>` `<folder path>` `<filter>` [`<filter>` ...] : decrypt "🔒 ... 🔒" sections in matching files
 ```
 
 ### Examples
 
 ```bash
-jam FOLDER//*.txt
+jam --encrypt "the-key" "the-nonce" FOLDER/ *.txt
+```
+
+```bash
+jam --decrypt "the-key" "the-nonce" FOLDER/ *.txt
 ```
 
 ## Version
 
-0.1
+1.0
 
 ## Author
 

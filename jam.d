@@ -1,14 +1,15 @@
-import std.ascii;
-import std.conv;
-import std.algorithm;
-import std.utf;
-import std.random;
-import std.array;
-import std.base64;
-import std.string;
-import std.range;
-import std.regex;
-import std.stdio;
+import core.stdc.stdlib : exit;
+//import std.algorithm;
+//import std.array;
+//import std.ascii;
+import std.base64 : Base64;
+import std.conv : to;
+import std.file : dirEntries, readText, write, SpanMode;
+//import std.range;
+import std.regex : regex, replaceAll, Captures;
+import std.stdio : writeln;
+import std.string : endsWith, replace, representation, startsWith;
+//import std.utf;
 
 // -- FUNCTIONS
 
@@ -259,10 +260,10 @@ string GetEncryptedText(
         auto decrypted_byte_array = GetByteArrayFromText( captures[ 1 ] );
         auto encrypted_byte_array = GetEncryptedByteArray( decrypted_byte_array, key_byte_array, nonce_byte_array );
 
-        return "🔒[" ~ GetBinaryTextFromByteArray( encrypted_byte_array ) ~ "]🔒";
+        return "🔒 " ~ GetBinaryTextFromByteArray( encrypted_byte_array ) ~ " 🔒";
     }
 
-    return text.replaceAll!ReplaceMatch( regex( `🔓\[(.*?)\]🔓` ) );
+    return text.replaceAll!ReplaceMatch( regex( `🔓 ([^🔓]*?) 🔓` ) );
 }
 
 // ~~
@@ -289,43 +290,216 @@ string GetDecryptedText(
         auto encrypted_byte_array = GetByteArrayFromBinaryText( captures[ 1 ] );
         auto decrypted_byte_array = GetEncryptedByteArray( encrypted_byte_array, key_byte_array, nonce_byte_array );
 
-        return "🔓[" ~ GetTextFromByteArray( decrypted_byte_array ) ~ "]🔓";
+        return "🔓 " ~ GetTextFromByteArray( decrypted_byte_array ) ~ " 🔓";
     }
 
-    return text.replaceAll!ReplaceMatch( regex( `🔒\[(.*?)\]🔒` ) );
+    return text.replaceAll!ReplaceMatch( regex( `🔒 ([^🔒]*?) 🔒` ) );
 }
 
 // ~~
 
-void Test(
+void PrintError(
+    string message
+    )
+{
+    writeln( "*** ERROR : ", message );
+}
+
+// ~~
+
+void Abort(
+    string message
+    )
+{
+    PrintError( message );
+
+    exit( -1 );
+}
+
+// ~~
+
+void Abort(
+    string message,
+    Exception exception
+    )
+{
+    PrintError( message );
+    PrintError( exception.msg );
+
+    exit( -1 );
+}
+
+// ~~
+
+string GetPhysicalPath(
+    string path
+    )
+{
+    return path.replace( '/', '\\' );
+}
+
+// ~~
+
+string GetLogicalPath(
+    string path
+    )
+{
+    return path.replace( '\\', '/' );
+}
+
+// ~~
+
+string ReadText(
+    string file_path
     )
 {
     string
-        key,
-        nonce,
-        text;
+        file_text;
 
-    key = "the-key";
-    nonce = "the-nonce";
+    writeln( "Reading file : ", file_path );
 
-    text = "Type your text with tags like 🔓[Encrypt this]🔓 and 🔒[6iHRVmBA6iM0rprF]🔒";
+    try
+    {
+        file_text = file_path.GetPhysicalPath().readText();
+    }
+    catch ( Exception exception )
+    {
+        Abort( "Can't read file : " ~ file_path, exception );
+    }
 
-    writeln( text );
+    return file_text;
+}
 
-    text = GetEncryptedText( text, key, nonce );
-    writeln( text );
+// ~~
 
-    text = GetDecryptedText( text, key, nonce );
-    writeln( text );
+void WriteText(
+    string file_path,
+    string file_text
+    )
+{
+    writeln( "Writing file : ", file_path );
 
-    text = GetEncryptedText( text, key, nonce );
-    writeln( text );
+    try
+    {
+        file_path.GetPhysicalPath().write( file_text );
+    }
+    catch ( Exception exception )
+    {
+        Abort( "Can't write file : " ~ file_path, exception );
+    }
+}
+
+// ~~
+
+void ProcessFile(
+    string file_path,
+    string key,
+    string nonce,
+    bool file_is_encrypted
+    )
+{
+    if ( file_is_encrypted )
+    {
+        file_path.WriteText(
+            file_path.ReadText().GetEncryptedText( key, nonce )
+            );
+    }
+    else
+    {
+        file_path.WriteText(
+            file_path.ReadText().GetDecryptedText( key, nonce )
+            );
+    }
+}
+
+// ~~
+
+void ProcessFolder(
+    string folder_path,
+    string[] filter_array,
+    string key,
+    string nonce,
+    bool file_is_encrypted
+    )
+{
+    writeln(
+        file_is_encrypted ? "Encrypting folder : " : "Decrypting folder : ",
+        folder_path
+        );
+
+    try
+    {
+        foreach ( filter; filter_array )
+        {
+            writeln(
+                file_is_encrypted ? "Encrypting files : " : "Decrypting files : ",
+                filter
+                );
+
+            foreach ( folder_entry; dirEntries( folder_path, filter, SpanMode.depth ) )
+            {
+                if ( folder_entry.isFile )
+                {
+                    ProcessFile( folder_entry.name.GetLogicalPath(), key, nonce, file_is_encrypted );
+                }
+            }
+        }
+    }
+    catch ( Exception exception )
+    {
+        Abort( "Can't process files", exception );
+    }
 }
 
 // ~~
 
 void main(
+    string[] argument_array
     )
 {
-    Test();
+    string
+        option;
+
+    argument_array = argument_array[ 1 .. $ ];
+
+    while ( argument_array.length >= 1
+            && argument_array[ 0 ].startsWith( "--" ) )
+    {
+        option = argument_array[ 0 ];
+        argument_array = argument_array[ 1 .. $ ];
+
+        if ( ( option == "--encrypt"
+               || option == "--decrypt" )
+             && argument_array.length >= 4
+             && argument_array[ 2 ].GetLogicalPath().endsWith( '/' ) )
+        {
+            ProcessFolder(
+                argument_array[ 2 ].GetLogicalPath(),
+                argument_array[ 3 .. $ ],
+                argument_array[ 0 ],
+                argument_array[ 1 ],
+                ( option == "--encrypt" )
+                );
+
+            argument_array = null;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if ( argument_array.length != 0 )
+    {
+        writeln( "Usage :" );
+        writeln( "    jam <option>" );
+        writeln( "Options :" );
+        writeln( "    --encrypt <key> <nonce> <folder path> <filter> [<filter> ...]" );
+        writeln( "    --decrypt <key> <nonce> <folder path> <filter> [<filter> ...]" );
+        writeln( "Examples :" );
+        writeln( "    jam --encrypt the-key the-nonce FOLDER/ *.txt" );
+        writeln( "    jam --decrypt the-key the-nonce FOLDER/ *.txt" );
+
+        Abort( "Invalid arguments : " ~ argument_array.to!string() );
+    }
 }

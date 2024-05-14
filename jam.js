@@ -235,13 +235,13 @@ function GetEncryptedText(
 
     return (
         text.replace(
-            /🔓\[(.*?)\]🔓/g,
+            /🔓 ([^🔓]*?) 🔓/g,
             ( match, decrypted_text ) =>
             {
                 let decrypted_byte_array = GetByteArrayFromText( decrypted_text );
                 let encrypted_byte_array = GetEncryptedByteArray( decrypted_byte_array, key_byte_array, nonce_byte_array );
 
-                return "🔒[" + GetBinaryTextFromByteArray( encrypted_byte_array ) + "]🔒";
+                return "🔒 " + GetBinaryTextFromByteArray( encrypted_byte_array ) + " 🔒";
             }
             )
         );
@@ -264,13 +264,13 @@ function GetDecryptedText(
 
     return (
         text.replace(
-            /🔒\[(.*?)\]🔒/g,
+            /🔒 ([^🔒]*?) 🔒/g,
             ( match, encrypted_text ) =>
             {
                 let encrypted_byte_array = GetByteArrayFromBinaryText( encrypted_text );
                 let decrypted_byte_array = GetEncryptedByteArray( encrypted_byte_array, key_byte_array, nonce_byte_array );
 
-                return "🔓[" + GetTextFromByteArray( decrypted_byte_array ) + "]🔓";
+                return "🔓 " + GetTextFromByteArray( decrypted_byte_array ) + " 🔓";
             }
             )
         );
