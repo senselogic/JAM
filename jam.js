@@ -1,49 +1,5 @@
 // -- FUNCTIONS
 
-function GetRandomByteArray(
-    text,
-    random_byte_count
-    )
-{
-    var
-        character_index,
-        high_seed,
-        low_seed,
-        random_byte_array,
-        random_seed;
-
-    low_seed = 0;
-    high_seed = 0;
-
-    for ( character_index = 0;
-          character_index < text.length;
-          ++character_index )
-    {
-        low_seed = ( ( low_seed << 5 ) - low_seed ) + text.charCodeAt( character_index );
-        high_seed = ( ( high_seed << 5 ) - high_seed ) + ( low_seed >>> 31 );
-
-        low_seed = low_seed & 0xFFFFFFFF;
-        high_seed = high_seed & 0xFFFFFFFF;
-    }
-
-    random_byte_array = new Uint8Array( random_byte_count );
-
-    for ( random_byte_index = 0;
-          random_byte_index < random_byte_count;
-          ++random_byte_index )
-    {
-        low_seed = ( low_seed * 1664525 + 1013904223 ) & 0xFFFFFFFF;
-        high_seed = ( high_seed * 1664525 + 1013904223 + ( low_seed >>> 31 ) ) & 0xFFFFFFFF;
-        random_seed = ( low_seed ^ high_seed );
-
-        random_byte_array[ random_byte_index ] = random_seed & 0xFF ^ ( random_seed >> 3 );
-    }
-
-    return random_byte_array;
-}
-
-// ~~
-
 function GetByteArrayFromText(
     text
     )
@@ -76,6 +32,71 @@ function GetByteArrayFromBinaryText(
     )
 {
     return new Uint8Array( atob( binary_text ).split( '' ).map( character => character.charCodeAt( 0 ) ) );
+}
+
+// ~~
+
+function GetRandomByteArray(
+    text,
+    random_byte_count
+    )
+{
+    var
+        high_seed,
+        left_text,
+        low_seed,
+        middle_text,
+        pass_index,
+        random_byte_array,
+        random_seed,
+        right_text,
+        text_byte_array,
+        text_byte_index;
+
+    random_byte_array = new Uint8Array( random_byte_count );
+    left_text = text;
+    middle_text = "";
+    right_text = text;
+
+    for ( pass_index = 0;
+          pass_index < 128;
+          ++pass_index )
+    {
+        text_byte_array = GetByteArrayFromText( text );
+
+        low_seed = 0;
+        high_seed = 0;
+
+        for ( text_byte_index = 0;
+              text_byte_index < text_byte_array.length;
+              ++text_byte_index )
+        {
+            low_seed = ( ( low_seed << 5 ) - low_seed ) + text_byte_array[ text_byte_index ];
+            high_seed = ( ( high_seed << 5 ) - high_seed ) + ( low_seed >>> 31 );
+
+            low_seed = low_seed & 0xFFFFFFFF;
+            high_seed = high_seed & 0xFFFFFFFF;
+        }
+
+        for ( random_byte_index = 0;
+              random_byte_index < random_byte_count;
+              ++random_byte_index )
+        {
+            low_seed = ( low_seed * 1664525 + 1013904223 ) & 0xFFFFFFFF;
+            high_seed = ( high_seed * 1664525 + 1013904223 + ( low_seed >>> 31 ) ) & 0xFFFFFFFF;
+            random_seed = ( low_seed ^ high_seed );
+
+            random_byte_array[ random_byte_index ]
+                = ( random_byte_array[ random_byte_index ] + ( random_seed & 0xFF ^ ( random_seed >> 3 ) ) ) & 0xFF;
+        }
+
+        left_text = left_text.slice( 1 ) + left_text[ 0 ];
+        middle_text += text[ ( pass_index * 47 ) % text.length ];
+        right_text = right_text.slice( -1 ) + right_text.slice( 0, -1 );
+        text = left_text + middle_text + right_text;
+    }
+
+    return random_byte_array;
 }
 
 // ~~
@@ -235,7 +256,7 @@ function GetEncryptedText(
 
     return (
         text.replace(
-            /🔓 ([^🔓]*?) 🔓/g,
+            /🔓 ([^🔓\n]*?) 🔓/g,
             ( match, decrypted_text ) =>
             {
                 let decrypted_byte_array = GetByteArrayFromText( decrypted_text );
@@ -264,7 +285,7 @@ function GetDecryptedText(
 
     return (
         text.replace(
-            /🔒 ([^🔒]*?) 🔒/g,
+            /🔒 ([^🔒\n]*?) 🔒/g,
             ( match, encrypted_text ) =>
             {
                 let encrypted_byte_array = GetByteArrayFromBinaryText( encrypted_text );

@@ -1,1 +1,3 @@
-Type your text with tags like 🔓 Encrypt this 🔓 and 🔓 Encrypt this 🔓.
+Single 🔓 and 🔒 characters are ignored.
+
+Type your text with tags like 🔓 Encrypt this ∑ 🔓 and 🔓 Encrypt this ∑ 🔓.

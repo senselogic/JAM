@@ -8,6 +8,16 @@
     </head>
     <body>
         <style>
+            body
+            {
+                padding: 0.5rem;
+            }
+
+            *
+            {
+                font-family: sans-serif;
+            }
+
             .column
             {
                 width: 100%;
@@ -22,50 +32,70 @@
                 width: 100%;
 
                 display: flex;
+                align-items: center;
                 gap: 1rem;
-            }
-
-            .label
-            {
-                width: 4rem;
             }
 
             .grow
             {
                 flex-grow: 1;
             }
+
+            .label
+            {
+                width: 4rem;
+
+                font-size: 0.97rem;
+            }
+
+            .text
+            {
+                min-height: calc( 100vh - 10rem );
+            }
         </style>
         <div class="column">
             <div class="row">
                 <label class="label">Key :</label>
-                <input class="grow" type="text" value="the-key"/>
+                <input class="grow" id="key" type="text" value="the-key"/>
             </div>
             <div class="row">
                 <label class="label">Nonce :</label>
-                <input class="grow" type="text" value="the-nonce"/>
-            </div>
-            <div class="row">
-                <textarea class="grow" id="text" rows="10" cols="50">Type your text with tags like 🔓 Encrypt this 🔓 and 🔒 6iHRVmBA6iM0rprF 🔒.</textarea>
+                <input class="grow" id="nonce" type="text" value="the-nonce"/>
             </div>
             <div class="row">
                 <button onclick="EncryptText()">Encrypt</button>
                 <button onclick="DecryptText()">Decrypt</button>
+            </div>
+            <div class="row">
+                <textarea class="text grow" id="text" rows="10" cols="50">Single 🔓 and 🔒 characters are ignored.
+
+Type your text with tags like 🔓 Encrypt this ∑ 🔓 and 🔒 6gpw3+epReA8jVVNZ71Wtg== 🔒.</textarea>
             </div>
         </div>
         <script>
             // -- CONSTANTS
 
             const
-                Key = "the-key",
-                Nonce = "the-nonce",
+                KeyElement = document.getElementById( "key" ),
+                NonceElement = document.getElementById( "nonce" ),
                 TextElement = document.getElementById( "text" );
 
             // -- FUNCTIONS
 
+            function AdjustTextHeight(
+                )
+            {
+                TextElement.style.height = 'auto';
+                TextElement.style.height = TextElement.scrollHeight + 'px';
+            }
+
+            // ~~
+
             function EncryptText(
                 )
             {
-                TextElement.value = GetEncryptedText( TextElement.value, Key, Nonce );
+                TextElement.value = GetEncryptedText( TextElement.value, KeyElement.value, NonceElement.value );
+                AdjustTextHeight();
             }
 
             // ~~
@@ -73,8 +103,14 @@
             function DecryptText(
                 )
             {
-                TextElement.value = GetDecryptedText( TextElement.value, Key, Nonce );
+                TextElement.value = GetDecryptedText( TextElement.value, KeyElement.value, NonceElement.value );
+                AdjustTextHeight();
             }
+
+            // -- STATEMENTS
+
+            TextElement.addEventListener( 'input', AdjustTextHeight );
+            AdjustTextHeight();
         </script>
     </body>
 </html>

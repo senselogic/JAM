@@ -1,62 +1,12 @@
 import core.stdc.stdlib : exit;
-//import std.algorithm;
-//import std.array;
-//import std.ascii;
 import std.base64 : Base64;
 import std.conv : to;
 import std.file : dirEntries, readText, write, SpanMode;
-//import std.range;
 import std.regex : regex, replaceAll, Captures;
 import std.stdio : writeln;
 import std.string : endsWith, replace, representation, startsWith;
-//import std.utf;
 
 // -- FUNCTIONS
-
-ubyte[] GetRandomByteArray(
-    string text,
-    long random_byte_count
-    )
-{
-    long
-        random_byte_index;
-    uint
-        character_index,
-        high_seed,
-        low_seed,
-        random_seed;
-    ubyte[]
-        random_byte_array;
-
-    random_byte_array = new ubyte[ random_byte_count ];
-
-    low_seed = 0;
-    high_seed = 0;
-
-    foreach ( character; text )
-    {
-        low_seed = ( ( low_seed << 5 ) - low_seed ) + character;
-        high_seed = ( ( high_seed << 5 ) - high_seed ) + ( low_seed >>> 31 );
-
-        low_seed &= 0xFFFFFFFF;
-        high_seed &= 0xFFFFFFFF;
-    }
-
-    for ( random_byte_index = 0;
-          random_byte_index < random_byte_count;
-          ++random_byte_index )
-    {
-        low_seed = ( low_seed * 1664525 + 1013904223 ) & 0xFFFFFFFF;
-        high_seed = ( high_seed * 1664525 + 1013904223 + ( low_seed >>> 31 ) ) & 0xFFFFFFFF;
-        random_seed = ( low_seed ^ high_seed );
-
-        random_byte_array[ random_byte_index ] = cast( ubyte )( random_seed & 0xFF ^ ( random_seed >> 3 ) );
-    }
-
-    return random_byte_array;
-}
-
-// ~~
 
 ubyte[] GetByteArrayFromText(
     string text
@@ -90,6 +40,75 @@ ubyte[] GetByteArrayFromBinaryText(
     )
 {
     return Base64.decode( binary_text );
+}
+
+// ~~
+
+ubyte[] GetRandomByteArray(
+    string text,
+    long random_byte_count
+    )
+{
+    long
+        pass_index,
+        random_byte_index,
+        text_byte_index;
+    string
+        left_text,
+        middle_text,
+        right_text;
+    uint
+        high_seed,
+        low_seed,
+        random_seed;
+    ubyte[]
+        random_byte_array,
+        text_byte_array;
+
+    random_byte_array = new ubyte[ random_byte_count ];
+    left_text = text;
+    middle_text = "";
+    right_text = text;
+
+    for ( pass_index = 0;
+          pass_index < 128;
+          ++pass_index )
+    {
+        text_byte_array = GetByteArrayFromText( text );
+
+        low_seed = 0;
+        high_seed = 0;
+
+        for( text_byte_index = 0;
+             text_byte_index < text_byte_array.length;
+             ++text_byte_index )
+        {
+            low_seed = ( ( low_seed << 5 ) - low_seed ) + text_byte_array[ text_byte_index ];
+            high_seed = ( ( high_seed << 5 ) - high_seed ) + ( low_seed >>> 31 );
+
+            low_seed &= 0xFFFFFFFF;
+            high_seed &= 0xFFFFFFFF;
+        }
+
+        for ( random_byte_index = 0;
+              random_byte_index < random_byte_count;
+              ++random_byte_index )
+        {
+            low_seed = ( low_seed * 1664525 + 1013904223 ) & 0xFFFFFFFF;
+            high_seed = ( high_seed * 1664525 + 1013904223 + ( low_seed >>> 31 ) ) & 0xFFFFFFFF;
+            random_seed = ( low_seed ^ high_seed );
+
+            random_byte_array[ random_byte_index ] += cast( ubyte )( random_seed & 0xFF ^ ( random_seed >> 3 ) );
+        }
+
+
+        left_text = left_text[ 1 .. $ ] ~ left_text[ 0 ];
+        middle_text ~= text[ ( pass_index * 47 ) % text.length ];
+        right_text = right_text[ $ - 1 ] ~ right_text[ 0 .. $ - 1 ];
+        text = left_text ~ middle_text ~ right_text;
+    }
+
+    return random_byte_array;
 }
 
 // ~~
@@ -263,7 +282,7 @@ string GetEncryptedText(
         return "🔒 " ~ GetBinaryTextFromByteArray( encrypted_byte_array ) ~ " 🔒";
     }
 
-    return text.replaceAll!ReplaceMatch( regex( `🔓 ([^🔓]*?) 🔓` ) );
+    return text.replaceAll!ReplaceMatch( regex( `🔓 ([^🔓\n]*?) 🔓` ) );
 }
 
 // ~~
@@ -293,7 +312,7 @@ string GetDecryptedText(
         return "🔓 " ~ GetTextFromByteArray( decrypted_byte_array ) ~ " 🔓";
     }
 
-    return text.replaceAll!ReplaceMatch( regex( `🔒 ([^🔒]*?) 🔒` ) );
+    return text.replaceAll!ReplaceMatch( regex( `🔒 ([^🔒\n]*?) 🔒` ) );
 }
 
 // ~~
@@ -398,17 +417,24 @@ void ProcessFile(
     bool file_is_encrypted
     )
 {
+    string
+        file_text,
+        old_file_text;
+
+    old_file_text = file_path.ReadText();
+
     if ( file_is_encrypted )
     {
-        file_path.WriteText(
-            file_path.ReadText().GetEncryptedText( key, nonce )
-            );
+        file_text = old_file_text.GetEncryptedText( key, nonce );
     }
     else
     {
-        file_path.WriteText(
-            file_path.ReadText().GetDecryptedText( key, nonce )
-            );
+        file_text = old_file_text.GetDecryptedText( key, nonce );
+    }
+
+    if ( file_text != old_file_text )
+    {
+        file_path.WriteText( file_text );
     }
 }
 
