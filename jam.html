@@ -65,6 +65,7 @@
             <div class="row">
                 <button onclick="EncryptText()">Encrypt</button>
                 <button onclick="DecryptText()">Decrypt</button>
+                <button onclick="CleanText()">Clean</button>
             </div>
             <div class="row">
                 <textarea class="text grow" id="text" rows="10" cols="50">Single 🔓 and 🔒 characters are ignored.
@@ -381,6 +382,23 @@ Type your text with tags like 🔓 Encrypt this ∑ 🔓 and 🔒 6gpw3+epReA8jV
 
             // ~~
 
+            function GetCleanedText(
+                text
+                )
+            {
+                return (
+                    text.replace(
+                        /🔓 ([^🔓\n]*?) 🔓/g,
+                        ( match, decrypted_text ) =>
+                        {
+                            return decrypted_text;
+                        }
+                        )
+                    );
+            }
+
+            // ~~
+
             function AdjustTextHeight(
                 )
             {
@@ -403,6 +421,15 @@ Type your text with tags like 🔓 Encrypt this ∑ 🔓 and 🔒 6gpw3+epReA8jV
                 )
             {
                 TextElement.value = GetDecryptedText( TextElement.value, KeyElement.value, NonceElement.value );
+                AdjustTextHeight();
+            }
+
+            // ~~
+
+            function CleanText(
+                )
+            {
+                TextElement.value = GetCleanedText( TextElement.value );
                 AdjustTextHeight();
             }
 
