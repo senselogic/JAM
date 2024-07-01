@@ -56,11 +56,11 @@
         <div class="column">
             <div class="row">
                 <label class="label">Key :</label>
-                <input class="grow" id="key" type="text" value="the-key"/>
+                <input class="grow" id="key" type="password" value="the-key" onfocus="this.type = 'text'" onblur="this.type = 'password'"/>
             </div>
             <div class="row">
                 <label class="label">Nonce :</label>
-                <input class="grow" id="nonce" type="text" value="the-nonce"/>
+                <input class="grow" id="nonce" type="password" value="the-nonce" onfocus="this.type = 'text'" onblur="this.type = 'password'"/>
             </div>
             <div class="row">
                 <button onclick="EncryptText()">Encrypt</button>
