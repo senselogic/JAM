@@ -1,2 +1,4 @@
 jam
+*.exe
 *.o
+*.obj
