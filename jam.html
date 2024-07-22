@@ -4,7 +4,6 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Jam</title>
-        <script src="jam.js"></script>
     </head>
     <body>
         <style>
@@ -71,6 +70,11 @@
                 <textarea class="text grow" id="text" rows="10" cols="50">Single 🔓 and 🔒 characters are ignored.
 
 Type your text with tags like 🔓 Encrypt this ∑ 🔓 and 🔒 6gpw3+epReA8jVVNZ71Wtg== 🔒.</textarea>
+            </div>
+            <div class="row">
+                <button onclick="EncryptText()">Encrypt</button>
+                <button onclick="DecryptText()">Decrypt</button>
+                <button onclick="CleanText()">Clean</button>
             </div>
         </div>
         <script>
@@ -432,6 +436,16 @@ Type your text with tags like 🔓 Encrypt this ∑ 🔓 and 🔒 6gpw3+epReA8jV
                 )
             {
                 TextElement.value = GetDecryptedText( TextElement.value, KeyElement.value, NonceElement.value );
+                AdjustTextHeight();
+                CopyText();
+            }
+
+            // ~~
+
+            function CleanText(
+                )
+            {
+                TextElement.value = GetCleanedText( TextElement.value );
                 AdjustTextHeight();
                 CopyText();
             }
